@@ -18,6 +18,7 @@ def main():
 	global pers_index_global
 
 	# Init database
+	os.remove("parking_ocr.db")
 	db.connect()
 	db.create_tables([Person, Park_field])
 	pers_index_global = 0
@@ -69,50 +70,87 @@ def on_new_client(clientsocket, addr, ocr):
 	clientsocket.send(ack.encode("ascii"))
 
 	while True:
-		# Wait for a person name
-		name = clientsocket.recv(1024)
-		name = name.decode("ascii")
-		clientsocket.send(ack.encode("ascii"))
+		if camera_ori == 0:
+			# Wait for a person name
+			name = clientsocket.recv(1024)
+			name = name.decode("ascii")
 
-		print ("\tClient " + str(camera_loc) + " detected " + name)
+			# Stop loop if client closed
+			if (name == "GOODBYE"):
+				break
 
-		file_name = name + ".jpg"
-		# Wait for that person's car image
-		recv_file(clientsocket, file_name)
+			clientsocket.send(ack.encode("ascii"))
 
-		# Get an array of letters (of the license plate) from cropping the image
-		letters = crop_plate_letters(file_name)
+			print ("\tClient " + str(camera_loc) + " detected " + name)
 
-		# Detect the letters
-		result = ocr.predict(letters)
-		plate = labels_to_letters(result)
-		print ("\tIdentified plate " + plate)
+			file_name = name + ".jpg"
 
-		# Add to database
-		pers = Person.create(pers_id=pers_index_global, name=name, car_plate=plate)
-		park_field = Park_field.create(pers_id=pers_index_global, park_id=-1,
-						entry_x=camera_loc[0], entry_y=camera_loc[1])
-		pers_index = pers_index_global
-		pers_index_global += 1
+			# Wait for that person's car image
+			recv_file(clientsocket, file_name)
 
-		# Wait and check response
-		sleep(0.2)
-		access_granted = False
-		park_index = -1
-		for entry in Park_field.select().where(Park_field.pers_id == pers_index):
-			access_granted = True
-			park_index = entry.park_id
-			break
+			# If the person is found in the database skip image proccessing
+			found = False
+			for entry in Person.select().where(Person.name == name):
+				plate = entry.car_plate
+				found = True
 
-		if (access_granted):
-			print ("\tAccess granted on park spot nr. " + str(park_index))
-			result = "GRANTED " + str(park_index)
-			clientsocket.send(result.encode("ascii"))
-			send_file(clientsocket, "map.layout")
-		else:
-			print ("\nAccess denied")
-			result = "DENIED " + str(park_index)
-			clientsocket.send(result.encode("ascii"))
+			# Get an array of letters (of the license plate) from cropping the image
+			if not found:
+				letters = crop_plate_letters(file_name)
+
+				# Detect the letters
+				result = ocr.predict(letters)
+				plate = labels_to_letters(result)
+				print ("\tIdentified plate " + plate)
+
+				# Add to database
+				pers = Person.create(pers_id=pers_index_global, name=name, car_plate=plate)
+			else:
+				print ("\Found in database plate " + plate)
+
+			park_field = Park_field.create(pers_id=pers_index_global, park_id=-1,
+							entry_x=camera_loc[0], entry_y=camera_loc[1])
+			pers_index = pers_index_global
+			pers_index_global += 1
+
+			# Wait and check response
+			sleep(0.2)
+			access_granted = False
+			park_index = -1
+			for entry in Park_field.select().where(Park_field.pers_id == pers_index):
+				access_granted = True
+				park_index = entry.park_id
+				break
+
+			if (access_granted):
+				print ("\tAccess granted on park spot nr. " + str(park_index))
+				result = "GRANTED " + str(park_index)
+				clientsocket.send(result.encode("ascii"))
+				send_file(clientsocket, "map.layout")
+			else:
+				print ("\nAccess denied")
+				result = "DENIED " + str(park_index)
+				clientsocket.send(result.encode("ascii"))
+		elif camera_ori == 1:
+			# Wait for a person name
+			name = clientsocket.recv(1024)
+			name = name.decode("ascii")
+
+			# Stop loop if client closed
+			if (name == "GOODBYE"):
+				break
+
+			clientsocket.send(ack.encode("ascii"))
+
+			print ("\tClient " + str(camera_loc) + " detected " + name + " leaving")
+
+			# Find the person in the database
+			for entry in Person.select().where(Person.name == name):
+				person_id = entry.pers_id
+				plate = entry.car_plate
+
+				for park in Park_field.select().where(Park_field.pers_id == person_id):
+					park.delete_instance()
 
 	clientsocket.close()
 

@@ -448,7 +448,7 @@ class Grid:
 					if (self.tiles[start_x - 1][y].button.cget("bg") == STREET and
 						self.tiles[start_x - 1][y].index == CONNECTED):
 						connected = True
-			if (end_x < self.max_x):
+			if (end_x < self.max_x - 1):
 				for y in range(start_y, end_y + 1):
 					if (self.tiles[end_x + 1][y].button.cget("bg") == STREET and
 						self.tiles[end_x + 1][y].index == CONNECTED):
@@ -458,7 +458,7 @@ class Grid:
 					if (self.tiles[x][start_y - 1].button.cget("bg") == STREET and
 						self.tiles[x][start_y - 1].index == CONNECTED):
 						connected = True
-			if (end_y > 0):
+			if (end_y < self.max_y - 1):
 				for x in range(start_x, end_x + 1):
 					if (self.tiles[x][end_y + 1].button.cget("bg") == STREET and
 						self.tiles[x][end_y + 1].index == CONNECTED):

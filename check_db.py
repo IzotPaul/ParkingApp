@@ -9,4 +9,4 @@ for person in Person.select():
 
 print ("Printing 'Park_field' table")
 for entry in Park_field.select():
-	print(entry.park_id, entry.timestamp, entry.entry_x, entry.entry_y)
+	print(entry.park_id, entry.entry_x, entry.entry_y)

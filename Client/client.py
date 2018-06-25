@@ -2,6 +2,7 @@ import socket
 import cv2
 import os
 import math
+import sys
 from tkinter import *
 from map_utils import init_imgs
 from random import randint
@@ -14,7 +15,7 @@ def main():
 	ORT = 1
 
 	# Initial config (values from client.config file)
-	file = open('client.config', 'r')
+	file = open(sys.argv[1], 'r')
 	HOST = socket.gethostname()
 	PORT = int(file.readline().split("=")[1])
 	LOC = file.readline().split("=")[1]
@@ -35,31 +36,41 @@ def main():
 	person_placeholder = "IMG_"
 	# Simulate 5 cars being scaned by the camera
 	for x in range(5):
-		# Get a random person / image file and send it to the server
-		person = person_placeholder + str(randint(1,13))
-		print ("Detected " + person + ". Sending image to server...")
+		if (ORT == 0):
+			# Get a random person / image file and send it to the server
+			person = person_placeholder + str(randint(1,13))
+			print ("Detected " + person + ". Sending image to server...")
 
-		sock.send(person.encode("ascii"))
-		msg = sock.recv(1024)
+			sock.send(person.encode("ascii"))
+			msg = sock.recv(1024)
 
-		file_name = person + ".jpg"
-		send_file(sock, file_name)
+			file_name = person + ".jpg"
+			send_file(sock, file_name)
 
-		# Await response
-		msg = sock.recv(1024)
-		msg = msg.decode("ascii")
+			# Await response
+			msg = sock.recv(1024)
+			msg = msg.decode("ascii")
 
-		response = msg.split(" ")[0]
-		spot = msg.split(" ")[1]
-		if (response == "GRANTED"):
-			recv_file(sock, "map.layout")
-			print ("  - Access granted on spot: " + spot + " ! -   ")
-			display_map("map.layout", int(spot), randint(5,10))
-		elif (response == "DENIED"):
-			print ("  - Access denied (PARKING_FULL)! -   ")
+			response = msg.split(" ")[0]
+			spot = msg.split(" ")[1]
+			if (response == "GRANTED"):
+				recv_file(sock, "map.layout")
+				print ("  - Access granted on spot: " + spot + " ! -   ")
+				display_map("map.layout", int(spot), randint(5,10))
+			elif (response == "DENIED"):
+				print ("  - Access denied (PARKING_FULL)! -   ")
 
-		# Simulate waiting for another car
-		sleep(randint(2,5))
+			# Simulate waiting for another car
+			sleep(randint(2,5))
+		elif (ORT == 1):
+			person = person_placeholder + str(randint(1,13))
+			print ("Detected " + person + " wanting to leave")
+
+			sock.send(person.encode("ascii"))
+			msg = sock.recv(1024)
+
+	goodbye = "GOODBYE"
+	sock.send(goodbye.encode("ascii"))
 
 	# Close socket
 	sock.shutdown(socket.SHUT_WR)
