@@ -14,7 +14,7 @@ Usage:
     
 3. From the folder client/ open as many clients as desired:
 ```
-    python3 client.py
+    python3 client.py <config_file>
 ```
     
     
