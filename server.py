@@ -128,7 +128,7 @@ def on_new_client(clientsocket, addr, ocr):
 				clientsocket.send(result.encode("ascii"))
 				send_file(clientsocket, "map.layout")
 			else:
-				print ("\nAccess denied")
+				print ("\tAccess denied")
 				result = "DENIED " + str(park_index)
 				clientsocket.send(result.encode("ascii"))
 		elif camera_ori == 1:
