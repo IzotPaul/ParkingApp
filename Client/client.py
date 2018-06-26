@@ -19,7 +19,7 @@ def main():
 	HOST = socket.gethostname()
 	PORT = int(file.readline().split("=")[1])
 	LOC = file.readline().split("=")[1]
-	ORT = file.readline().split("=")[1]
+	ORT = int(file.readline().split("=")[1])
 	file.close()
 
 	# Init socket and connect to server
@@ -117,7 +117,6 @@ def display_map(filename, idx, timeout):
 			labels[x][y].grid(row=x, column=y)
 
 	# Color spot differently
-	print (idx)
 	for x in range(max_x):
 		for y in range(max_y):
 			if (layout[x][y] == idx):
@@ -149,10 +148,12 @@ def recv_file(sock, file_name):
 	file = open(file_name, "wb")
 	ack = "ACK"
 
+	# Receive the size of the file
 	size = sock.recv(1024)
 	size = size.decode("ascii")
 	sock.send(ack.encode("ascii"))
 
+	# Receive the file itself
 	for x in range(int(size)):
 		payload = sock.recv(1024)
 		file.write(payload)
